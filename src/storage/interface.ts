@@ -10,10 +10,13 @@ export interface StorageItem<T> {
     get(): Promise<T | null>;
 
     set(item: T): Promise<void>;
+
+    clear(): Promise<void>;
 }
 
-export interface StaticStorageItem<T> extends StorageItem<T> {
-    set(item: T): Promise<void>;
+export interface StaticStorageItem<T> {
+    get value(): T | null;
+    set value(newValue: T | null);
 
     init(): Promise<void>;
 }
