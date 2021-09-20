@@ -2,8 +2,8 @@ export type Storage = {
     getItem<T>(key: string): Promise<T | null>;
     setItem<T>(key: string, item: T): Promise<void>;
     removeItem(key: string): Promise<void>;
-    clear?(): Promise<void>;
-    keys?(): Promise<string[]>;
+    clear(): Promise<void>;
+    keys(): Promise<string[]>;
 };
 
 export interface StorageItem<T> {

@@ -1,8 +1,8 @@
 import {StaticStorageItem, Storage, StorageItem} from './interface';
 
 export class StorageItemImpl<T> implements StorageItem<T> {
-    key: string;
-    storage: Storage;
+    readonly key: string;
+    readonly storage: Storage;
 
     constructor(key: string, storage: Storage) {
         this.key = key;
@@ -23,11 +23,11 @@ export class StorageItemImpl<T> implements StorageItem<T> {
 }
 
 export class StaticStorageItemImpl<T> implements StaticStorageItem<T> {
-    _value: T | null = null;
-    _item: StorageItemImpl<T>;
+    private _value: T | null = null;
+    readonly item: StorageItemImpl<T>;
 
     constructor(key: string, storage: Storage) {
-        this._item = new StorageItemImpl(key, storage);
+        this.item = new StorageItemImpl(key, storage);
     }
 
     get value(): T | null {
@@ -38,12 +38,12 @@ export class StaticStorageItemImpl<T> implements StaticStorageItem<T> {
         this._value = newValue;
 
         if (newValue !== null)
-            this._item.set(newValue);
+            this.item.set(newValue);
         else
-            this._item.clear();
+            this.item.clear();
     }
 
     async init(): Promise<void> {
-        this.value = await this._item.get();
+        this.value = await this.item.get();
     }
 }

@@ -1,37 +1,65 @@
 import {Storage} from './interface';
+import {StaticStorageItemImpl, StorageItemImpl} from './implementation';
 
 export type CachedStorageOptions = {
     metaKey?: string;
     keyPrefix?: string;
 };
 
-export abstract class CachedStorage implements Storage {
+export class CachedStorage implements Storage {
     readonly metaKey: string;
     readonly keyPrefix: string;
-    private storage: Record<string, any> = {};
+    private cache: Record<string, any> = {};
+    private storage: Storage;
 
-    protected constructor(options: CachedStorageOptions) {
+    constructor(options: CachedStorageOptions, storage: Storage) {
         this.metaKey = options.metaKey || 'meta';
         this.keyPrefix = options.keyPrefix ? `${options.keyPrefix}-` : '';
+        this.storage = storage;
     }
 
-    _getKeyFor(key: string): string {
+    protected getKeyFor(key: string): string {
         return this.keyPrefix + key;
     }
 
-    abstract getItem<T>(key: string): Promise<T | null>;
+    async getItem<T>(key: string): Promise<T | null> {
+        const item = await this.storage.getItem<T>(this.getKeyFor(key));
+        this.cache[key] = item;
+        return item;
+    }
 
-    abstract removeItem(key: string): Promise<void>;
+    async removeItem(key: string): Promise<void> {
+        delete this.cache[key];
+        return this.storage.removeItem(this.getKeyFor(key));
+    }
 
-    abstract setItem<T>(key: string, item: T): Promise<void>;
+    async setItem<T>(key: string, item: T): Promise<void> {
+        this.cache[key] = item;
+        return this.storage.setItem(this.getKeyFor(key), item);
+    }
 
     async clear(): Promise<void> {
-        await Promise.all(Object.keys(this.storage).map(key => this.removeItem(key)));
-        this.storage = {};
+        await Promise.all(
+            Object.keys(this.cache)
+                .map(key => this.storage.removeItem(this.getKeyFor(key))),
+        );
+
+        this.cache = {};
     }
 
     async keys(): Promise<string[]> {
-        return Object.keys(this.storage);
+        return Object.keys(this.cache);
+    }
+
+    Item<T>(key: string) {
+        return new StorageItemImpl<T>(key, this);
+    }
+
+    StaticItem<T>(key: string) {
+        return new StaticStorageItemImpl<T>(key, this);
     }
 }
+
+export const createCachedStorage = (storage: Storage) =>
+    (options: CachedStorageOptions): Storage => new CachedStorage(options, storage);
 
