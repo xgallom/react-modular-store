@@ -1,12 +1,21 @@
-export type Storage = {
-    getItem<T>(key: string): Promise<T | null>;
-    setItem<T>(key: string, item: T): Promise<void>;
-    removeItem(key: string): Promise<void>;
-    clear(): Promise<void>;
-    keys(): Promise<string[]>;
-};
+export interface BaseStorage<T extends {} = Record<string, any>> {
+    getItem<K extends keyof T>(key: K): Promise<T[K] | null>;
+    setItem<K extends keyof T>(key: K, item: T[K]): Promise<void>;
+    removeItem<K extends keyof T>(key: K): Promise<void>;
+}
 
-export interface StorageItem<T> {
+export interface Storage<T extends {} = Record<string, any>> extends BaseStorage<T> {
+    init(): Promise<void>;
+
+    clear(): Promise<void>;
+    keys(): Promise<(keyof T)[]>;
+    multiGet<K extends keyof T>(keys: K[]): Promise<(T[K] | null)[]>;
+
+    Item<K extends keyof T>(key: K): StorageItem<T[K]>;
+    StaticItem<K extends keyof T>(key: K): StaticStorageItem<T[K]>;
+}
+
+export interface StorageItem<T = any> {
     get(): Promise<T | null>;
 
     set(item: T): Promise<void>;
@@ -14,7 +23,7 @@ export interface StorageItem<T> {
     clear(): Promise<void>;
 }
 
-export interface StaticStorageItem<T> {
+export interface StaticStorageItem<T = any> {
     get value(): T | null;
     set value(newValue: T | null);
 

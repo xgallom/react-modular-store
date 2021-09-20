@@ -1,19 +1,19 @@
 import {StaticStorageItem, Storage, StorageItem} from './interface';
 
-export class StorageItemImpl<T> implements StorageItem<T> {
-    readonly key: string;
-    readonly storage: Storage;
+export class StorageItemImpl<T extends {}, K extends keyof T> implements StorageItem<T[K]> {
+    readonly key: K;
+    readonly storage: Storage<T>;
 
-    constructor(key: string, storage: Storage) {
+    constructor(key: K, storage: Storage<T>) {
         this.key = key;
         this.storage = storage;
     }
 
-    async get(): Promise<T | null> {
+    async get(): Promise<T[K] | null> {
         return this.storage.getItem(this.key);
     }
 
-    async set(item: T): Promise<void> {
+    async set(item: T[K]): Promise<void> {
         return this.storage.setItem(this.key, item);
     }
 
@@ -22,19 +22,19 @@ export class StorageItemImpl<T> implements StorageItem<T> {
     }
 }
 
-export class StaticStorageItemImpl<T> implements StaticStorageItem<T> {
-    private _value: T | null = null;
-    readonly item: StorageItemImpl<T>;
+export class StaticStorageItemImpl<T extends {}, K extends keyof T> implements StaticStorageItem<T[K]> {
+    private _value: T[K] | null = null;
+    readonly item: StorageItemImpl<T, K>;
 
-    constructor(key: string, storage: Storage) {
+    constructor(key: K, storage: Storage<T>) {
         this.item = new StorageItemImpl(key, storage);
     }
 
-    get value(): T | null {
+    get value(): T[K] | null {
         return this._value;
     }
 
-    set value(newValue: T | null) {
+    set value(newValue: T[K] | null) {
         this._value = newValue;
 
         if (newValue !== null)

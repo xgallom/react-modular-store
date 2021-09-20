@@ -1,65 +1,104 @@
-import {Storage} from './interface';
+import {BaseStorage, StaticStorageItem, Storage, StorageItem} from './interface';
 import {StaticStorageItemImpl, StorageItemImpl} from './implementation';
 
-export type CachedStorageOptions = {
-    metaKey?: string;
-    keyPrefix?: string;
-};
+const MetaKey = '__meta';
 
-export class CachedStorage implements Storage {
-    readonly metaKey: string;
-    readonly keyPrefix: string;
-    private cache: Record<string, any> = {};
-    private storage: Storage;
+type CacheObject<T extends {}> = { [K in keyof T]: T[K] | null };
 
-    constructor(options: CachedStorageOptions, storage: Storage) {
-        this.metaKey = options.metaKey || 'meta';
-        this.keyPrefix = options.keyPrefix ? `${options.keyPrefix}-` : '';
+export class CachedStorage<T extends {} = Record<string, any>> implements Storage<T> {
+    private cache: CacheObject<T> = {} as CacheObject<T>;
+    private storage: BaseStorage;
+
+    constructor(storage: BaseStorage<T>) {
         this.storage = storage;
     }
 
-    protected getKeyFor(key: string): string {
-        return this.keyPrefix + key;
+    protected async getMeta(): Promise<(keyof T)[]> {
+        return (await this.storage.getItem(MetaKey) || []) as (keyof T)[];
     }
 
-    async getItem<T>(key: string): Promise<T | null> {
-        const item = await this.storage.getItem<T>(this.getKeyFor(key));
+    protected async setMeta(keys: (keyof T)[]): Promise<void> {
+        return this.storage.setItem(MetaKey, keys);
+    }
+
+    protected cachedMeta(): (keyof T)[] {
+        return (Object.keys(this.cache) as (keyof T)[])
+            .filter(key => this.cache[key] != null);
+    }
+
+    protected async saveMeta(): Promise<void> {
+        return this.setMeta(this.cachedMeta());
+    }
+
+    private async dangerouslyGetItem<K extends keyof T>(key: K): Promise<T[K] | null> {
+        const cacheItem = this.cache[key];
+
+        if (cacheItem != null)
+            return cacheItem;
+
+        const item = await this.storage.getItem(key.toString());
+
         this.cache[key] = item;
         return item;
     }
 
-    async removeItem(key: string): Promise<void> {
-        delete this.cache[key];
-        return this.storage.removeItem(this.getKeyFor(key));
+    async init(): Promise<void> {
+        const keys = await this.getMeta();
+        const getItem = (key: keyof T) => this.dangerouslyGetItem(key);
+        await Promise.all(keys.map(getItem));
     }
 
-    async setItem<T>(key: string, item: T): Promise<void> {
+    async getItem<K extends keyof T>(key: K): Promise<T[K] | null> {
+        const item = await this.dangerouslyGetItem(key);
+
+        this.saveMeta();
+
+        return item;
+    }
+
+    async removeItem<K extends keyof T>(key: K): Promise<void> {
+        delete this.cache[key];
+
+        await this.storage.removeItem(key.toString());
+
+        this.saveMeta();
+    }
+
+    async setItem<K extends keyof T>(key: K, item: T[K]): Promise<void> {
         this.cache[key] = item;
-        return this.storage.setItem(this.getKeyFor(key), item);
+
+        await this.storage.setItem(key.toString(), item);
+
+        this.saveMeta();
     }
 
     async clear(): Promise<void> {
-        await Promise.all(
-            Object.keys(this.cache)
-                .map(key => this.storage.removeItem(this.getKeyFor(key))),
-        );
+        const removeItem = (key: keyof T) => this.storage.removeItem(key.toString());
+        await Promise.all(this.cachedMeta().map(removeItem));
 
-        this.cache = {};
+        this.cache = {} as CacheObject<T>;
+        this.saveMeta();
     }
 
-    async keys(): Promise<string[]> {
-        return Object.keys(this.cache);
+    async keys(): Promise<(keyof T)[]> {
+        return Object.keys(this.cache) as (keyof T)[];
     }
 
-    Item<T>(key: string) {
-        return new StorageItemImpl<T>(key, this);
+    async multiGet<K extends keyof T>(keys: K[]): Promise<(T[K] | null)[]> {
+        const items = await Promise.all(keys.map(key => this.dangerouslyGetItem(key)));
+
+        this.saveMeta();
+
+        return items;
     }
 
-    StaticItem<T>(key: string) {
-        return new StaticStorageItemImpl<T>(key, this);
+    Item<K extends keyof T>(key: K): StorageItem<T[K]> {
+        return new StorageItemImpl<T, K>(key, this);
+    }
+
+    StaticItem<K extends keyof T>(key: K): StaticStorageItem<T[K]> {
+        return new StaticStorageItemImpl<T, K>(key, this);
     }
 }
 
-export const createCachedStorage = (storage: Storage) =>
-    (options: CachedStorageOptions): Storage => new CachedStorage(options, storage);
-
+export const createCachedStorage = <T extends {}>(storage: BaseStorage<T>): Storage<T> => new CachedStorage<T>(storage);

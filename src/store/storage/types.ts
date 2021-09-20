@@ -21,4 +21,3 @@ export type StorageStore<T> = Store<T> & {
     useSave: () => (() => Promise<void>),
     useSaveValue: <K extends keyof T>(key: K) => ((valueState: T[K]) => Promise<void>),
 };
-
