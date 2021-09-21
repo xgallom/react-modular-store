@@ -1,2 +1,2 @@
-export * from './cached-storage-mixin';
-export * from './prefixed-storage-mixin';
+export * from './cached';
+export * from './prefixed';

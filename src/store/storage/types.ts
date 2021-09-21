@@ -12,7 +12,7 @@ export type StorageManagerHandlerHelpers<T> = {
     save: SaveHandler<T>,
 };
 
-export type StorageStoreConfig<T> = {
+export type StorageStoreImplConfig<T> = {
     storage: StorageItem<T>,
     storageManagerHandler: (options: StorageManagerHandlerHelpers<T>) => void,
 };

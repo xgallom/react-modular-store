@@ -1,11 +1,10 @@
 import React, {Dispatch, SetStateAction, useEffect} from 'react';
-// import {AppState, AppStateStatus} from 'react-native';
 import {createMemoryStore} from '../memory/create';
-import {LoadHandler, SaveHandler, StorageStore, StorageStoreConfig} from './types';
+import {LoadHandler, SaveHandler, StorageStore, StorageStoreImplConfig} from './types';
 
 export const createStorageStoreImpl = <T extends {}>(
     defaultValue: T,
-    {storage, storageManagerHandler}: StorageStoreConfig<T>,
+    {storage, storageManagerHandler}: StorageStoreImplConfig<T>,
 ): StorageStore<T> => {
     const memoryStore = createMemoryStore(defaultValue);
 
@@ -30,21 +29,6 @@ export const createStorageStoreImpl = <T extends {}>(
             load(setValueState);
         }, []);
 
-        /* TODO: MOVE TO RN STORAGE
-                if (!notAutomatic) {
-                    useEffect(() => {
-                        const onAppStateChange = (appState: AppStateStatus) => {
-                            if (appState !== 'active')
-                                save(valueState);
-                        };
-
-                        AppState.addEventListener('change', onAppStateChange);
-                        return () => {
-                            AppState.removeEventListener('change', onAppStateChange);
-                        };
-                    }, [valueState]);
-                }
-        */
         storageManagerHandler({
             valueState,
             setValueState,
