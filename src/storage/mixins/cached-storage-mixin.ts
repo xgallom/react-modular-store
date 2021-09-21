@@ -1,11 +1,11 @@
-import {BaseStorage, StaticStorageItem, Storage, StorageItem} from './interface';
-import {StaticStorageItemImpl, StorageItemImpl} from './implementation';
+import {BaseStorage, BaseStorageMixin, StaticStorageItem, Storage, StorageItem} from '../interface';
+import {StaticStorageItemImpl, StorageItemImpl} from '../implementation';
 
 const MetaKey = '__meta';
 
 type CacheObject<T extends {}> = { [K in keyof T]: T[K] | null };
 
-export class CachedStorage<T extends {} = Record<string, any>> implements Storage<T> {
+class CachedStorageMixinImpl<T extends {} = Record<string, any>> implements Storage<T> {
     private cache: CacheObject<T> = {} as CacheObject<T>;
     private storage: BaseStorage;
 
@@ -101,4 +101,5 @@ export class CachedStorage<T extends {} = Record<string, any>> implements Storag
     }
 }
 
-export const createCachedStorage = <T extends {}>(storage: BaseStorage<T>): Storage<T> => new CachedStorage<T>(storage);
+export const CachedStorageMixin = (): BaseStorageMixin =>
+    <T extends {}>(storage: BaseStorage<T>): Storage<T> => new CachedStorageMixinImpl<T>(storage);

@@ -1,10 +1,10 @@
-import {BaseStorage} from './interface';
+import {BaseStorage, BaseStorageMixin} from '../interface';
 
 export type PrefixedStorageOptions = {
     keyPrefix: string;
 };
 
-export class PrefixedStorage<T extends {} = Record<string, any>> implements BaseStorage<T> {
+class PrefixedStorageMixinImpl<T extends {} = Record<string, any>> implements BaseStorage<T> {
     readonly keyPrefix: string;
     private storage: BaseStorage;
 
@@ -30,5 +30,5 @@ export class PrefixedStorage<T extends {} = Record<string, any>> implements Base
     }
 }
 
-export const createPrefixedStorage = <T extends {}>(storage: BaseStorage<T>) =>
-    (options: PrefixedStorageOptions): BaseStorage<T> => new PrefixedStorage(options, storage);
+export const PrefixedStorageMixin = (options: PrefixedStorageOptions): BaseStorageMixin =>
+    <T extends {}>(storage: BaseStorage<T>): BaseStorage<T> => new PrefixedStorageMixinImpl(options, storage);

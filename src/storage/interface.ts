@@ -15,6 +15,11 @@ export interface Storage<T extends {} = Record<string, any>> extends BaseStorage
     StaticItem<K extends keyof T>(key: K): StaticStorageItem<T[K]>;
 }
 
+export type BaseStorageMixin<TI extends {} = Record<any, any>,
+    TO extends TI = Record<any, any>,
+    SI = BaseStorage<TI>,
+    SO = BaseStorage<TO> & BaseStorage<TI>> = (storage: SI) => SO;
+
 export interface StorageItem<T = any> {
     get(): Promise<T | null>;
 

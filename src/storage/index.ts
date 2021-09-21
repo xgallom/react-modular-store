@@ -1,4 +1,4 @@
-export * from './cached-storage';
+export * from './mixins';
 export * from './implementation';
 export * from './interface';
-export * from './prefixed-storage';
+export * from './apply-storage-mixins';
