@@ -3,9 +3,9 @@ import React from 'react';
 export const reduceStoreProviders = (providers: React.FC[]): React.FC => (
     ({children}) => (
         <>
-            {providers.reduce((child, Provider) => (
+            {providers.reduceRight((children, Provider) => (
                     <Provider>
-                        {child}
+                        {children}
                     </Provider>
                 ),
                 children,
