@@ -1,4 +1,4 @@
-import React, {Dispatch, SetStateAction, useEffect} from 'react';
+import React, {Dispatch, SetStateAction, useContext, useEffect, useState} from 'react';
 import {createMemoryStore} from '../memory/create';
 import {LoadHandler, SaveHandler, StorageStore, StorageStoreImplConfig} from './types';
 
@@ -48,17 +48,24 @@ export const createStorageStoreImpl = <T extends {}>(
     );
 
     const useSaveValue = <K extends keyof T>(key: K) => {
-        const [valueState, setValueState] = memoryStore.useContext();
+        const [valueState, , setStoreValue] = memoryStore.useContext();
+        const [value, setValue] = [
+            valueState[key],
+            (newValue: T[K]) => setStoreValue(key, newValue),
+        ] as [T[K], (newValue: T[K]) => void];
+        const [cachedValue, setCachedValue] = useState<T[K]>(value);
 
-        return (value: T[K]) => {
-            const newValueState = {
-                ...valueState,
-                [key]: value,
-            };
+        useEffect(() => {
+            if (value !== cachedValue) {
+                setValue(cachedValue);
+                save({
+                    ...valueState,
+                    [key]: cachedValue,
+                });
+            }
+        }, [value, cachedValue, setValue]);
 
-            setValueState(newValueState);
-            return save(newValueState);
-        };
+        return setCachedValue;
     };
 
     return {
