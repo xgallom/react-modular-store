@@ -1,4 +1,4 @@
-import React, {createContext, Dispatch, SetStateAction, useContext, useState} from 'react';
+import React, {createContext, Dispatch, SetStateAction, useContext, useState, useEffect} from 'react';
 import {Store} from './types';
 
 export const createMemoryStore = <T extends {}>(defaultValue: T): Store<T> => {
@@ -33,10 +33,29 @@ export const createMemoryStore = <T extends {}>(defaultValue: T): Store<T> => {
         );
     };
 
-    // TODO: Add state to avoid race conditions
-    const useValue = <K extends keyof T>(key: K) => {
+    const useStoreValue = <K extends keyof T>(key: K) => {
         const [value, , setValue] = useContext(Context);
-        return [value[key], (newValue: T[K]) => setValue(key, newValue)] as [T[K], (newValue: T[K]) => void];
+        return [
+            value[key],
+            (newValue: T[K]) => setValue(key, newValue)
+        ] as [T[K], (newValue: T[K]) => void];
+    };
+
+    const useValue = <K extends keyof T>(key: K) => {
+        const [value, setValue] = useStoreValue(key);
+        const [cachedValue, setCachedValue] = useState<T[K]>(value);
+
+        useEffect(() => {
+            if (value !== cachedValue)
+                setValue(cachedValue);
+        }, [value, cachedValue, setValue]);
+
+        return [
+            cachedValue,
+            (newValue: T[K]) => {
+                setCachedValue(newValue);
+            },
+        ] as [T[K], (newValue: T[K]) => void];
     };
 
     return {
